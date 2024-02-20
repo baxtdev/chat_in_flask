@@ -1,49 +1,35 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  postgres:
-    image: postgres:latest
+  chat_app_postgres:
+    image: postgres:15
+    container_name: chat_app_postgres
+    volumes:
+      - ~/.pg/pg_data/yt:/var/lib/postgresql/data
     env_file:
       - .env
-    environment:
-      PG_DATA: /var/lib/postgresql/data
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: always
-    networks:
-      - app
-
-  adminer:
+  chat_app_adminer:
     image: adminer
     restart: always
     depends_on:
-      - postgres
-    networks:
-      - app
+      - chat_app_postgres
     ports:
       - "${ADMINER_PORT}:8080"
     env_file:
       - .env
 
-  web:
-    build:
+  chat_app:
+    build: 
+      dockerfile:  Dockerfile
       context: .
+    image: chat_app:latest  
+    depends_on:
+      - chat_app_postgres
     env_file:
       - .env
-    command: python3 dajngocaht/manage.py runserver 0.0.0.0:8001
-    volumes:
-      - .:/app:delegated
     ports:
-      - "${PORT}:8001"
-    depends_on:
-      - postgres
-      - adminer
-    networks:
-      - app
-    restart: always
+      - 8001:8001  
+    command: gunicorn -b 0.0.0.0:8001 dajngocaht.wsgi:application
 
-networks:
-  app:
 
-volumes:
-  pgdata:
+      
